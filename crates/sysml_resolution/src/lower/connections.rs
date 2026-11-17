@@ -409,9 +409,10 @@ impl SemanticModelBuilder {
     /// Shared body walker for `connection def`/`connection` usage bodies (both use
     /// `ConnectionDefBody`/`ConnectionDefBodyElement` -- there is no separate
     /// `ConnectionUsageBody`), mirroring `lower_state_def_body`'s single-walker pattern. `end`
-    /// declarations and `connect` statements carry the connector-end structure; everything else
-    /// beyond attribute/item/port/nested-part-usage members falls through to
-    /// `unsupported_connection_definition_member`.
+    /// declarations and `connect` statements carry the connector-end structure. Behavior members
+    /// (action/state/calc/constraint definitions and usages, `exhibit state`, `perform`) lower
+    /// through the same owners as in a part definition body, since a connection definition body
+    /// is a `DefinitionBody` (SysML BNF 664, 234).
     pub(crate) fn lower_connection_body(
         &mut self,
         document: DocumentIdx,
@@ -505,6 +506,41 @@ impl SemanticModelBuilder {
                             UnsupportedFamily::ConnectionDefinitionMember,
                             node,
                         )?,
+                    ConnectionDefBodyElement::ActionDef(action_def) => {
+                        self.lower_action_def(document, Some(declaration), action_def)?;
+                    }
+                    ConnectionDefBodyElement::ActionUsage(action_usage) => {
+                        self.lower_action_usage(document, Some(declaration), action_usage)?;
+                    }
+                    ConnectionDefBodyElement::StateDef(state_def) => {
+                        self.lower_state_def(document, Some(declaration), state_def)?;
+                    }
+                    ConnectionDefBodyElement::StateUsage(state_usage) => {
+                        self.lower_state_usage(document, Some(declaration), state_usage)?;
+                    }
+                    ConnectionDefBodyElement::ExhibitState(node) => {
+                        self.lower_exhibit_state(
+                            document,
+                            Some(declaration),
+                            UnsupportedFamily::ConnectionDefinitionMember,
+                            node,
+                        )?;
+                    }
+                    ConnectionDefBodyElement::CalcDef(calc_def) => {
+                        self.lower_calc_def(document, Some(declaration), calc_def)?;
+                    }
+                    ConnectionDefBodyElement::CalcUsage(calc_usage) => {
+                        self.lower_calc_usage(document, Some(declaration), calc_usage)?;
+                    }
+                    ConnectionDefBodyElement::ConstraintDef(constraint_def) => {
+                        self.lower_constraint_def(document, Some(declaration), constraint_def)?;
+                    }
+                    ConnectionDefBodyElement::ConstraintUsage(constraint_usage) => {
+                        self.lower_constraint_usage(document, Some(declaration), constraint_usage)?;
+                    }
+                    ConnectionDefBodyElement::Perform(perform) => {
+                        self.lower_perform(document, Some(declaration), perform)?;
+                    }
                 }
             }
         }
